@@ -1,0 +1,166 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="uq3rVlhW5_l9j85Ul2-6">
+    <mxGraphModel dx="1662" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="716" width="1160" x="600" y="204" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-2" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="252" width="140" x="706" y="261" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-3" parent="G2Mgj138FMsBbMFR-iqp-2" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;&amp;nbsp;rx_bit&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;data&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; valid&lt;/div&gt;" vertex="1">
+          <mxGeometry height="225.840830449827" width="140" y="26.15916955017301" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-4" parent="G2Mgj138FMsBbMFR-iqp-2" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="uart_rx" vertex="1">
+          <mxGeometry height="26.15916955017301" width="140" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-5" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="336" width="160" x="1070" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-6" parent="G2Mgj138FMsBbMFR-iqp-5" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;rx_data&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; payload_data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;rx_valid&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;header_err&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;crc_err&lt;/div&gt;&lt;div&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; crc_valid&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;acc_done&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;acc_en&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;acc_result&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;nbsp;tx_ready&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;tx_data&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;i&gt;&lt;br&gt;&lt;/i&gt;&lt;/div&gt;&lt;div&gt;&lt;i&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;&amp;nbsp;&lt;/i&gt;tx_en&lt;/div&gt;" vertex="1">
+          <mxGeometry height="302.84" width="160" y="26.16" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-7" parent="G2Mgj138FMsBbMFR-iqp-5" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="host_interface" vertex="1">
+          <mxGeometry height="26.15916955017301" width="160" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-8" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="252" width="140" x="1450" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-9" parent="G2Mgj138FMsBbMFR-iqp-8" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;inp_data&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; result&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp;en&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;done&lt;/div&gt;" vertex="1">
+          <mxGeometry height="225.840830449827" width="140" y="26.15916955017301" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-10" parent="G2Mgj138FMsBbMFR-iqp-8" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="accelerator" vertex="1">
+          <mxGeometry height="26.15916955017301" width="140" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-11" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.018;entryY=0.1;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.993;exitY=0.131;exitDx=0;exitDy=0;exitPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="853" y="315.97" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="8&lt;div&gt;//&lt;/div&gt;" vertex="1">
+          <mxGeometry height="36" width="42" x="951" y="291" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-14" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.004;entryY=0.132;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1.01;exitY=0.098;exitDx=0;exitDy=0;exitPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1210" y="315.97" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="48&lt;div&gt;//&lt;/div&gt;" vertex="1">
+          <mxGeometry height="14" width="21" x="1287" y="302" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-16" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.469;exitDx=0;exitDy=0;exitPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1390" y="428.2" />
+              <mxPoint x="1390" y="342.6" />
+            </Array>
+            <mxPoint x="1210" y="428" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-17" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0.011;entryY=0.475;entryDx=0;entryDy=0;entryPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-6">
+          <mxGeometry relative="1" x="0.0692" as="geometry">
+            <Array as="points">
+              <mxPoint x="1650" y="342.6" />
+              <mxPoint x="1650" y="650" />
+              <mxPoint x="1030" y="650" />
+              <mxPoint x="1030" y="430" />
+            </Array>
+            <mxPoint x="1035" y="414" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-18" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;jumpStyle=gap;exitX=1.008;exitY=0.149;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" x="0.0039" as="geometry">
+            <Array as="points">
+              <mxPoint x="1670" y="319.8" />
+              <mxPoint x="1670" y="660" />
+              <mxPoint x="1010" y="660" />
+              <mxPoint x="1010" y="463" />
+            </Array>
+            <mxPoint x="1600" y="320.4" as="sourcePoint" />
+            <mxPoint x="1068.74" y="463" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-19" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;//&lt;/div&gt;&lt;div&gt;48&lt;/div&gt;" vertex="1">
+          <mxGeometry height="33.16" width="42" x="1400" y="651.42" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-20" connectable="0" parent="1" style="group;align=left;verticalAlign=top;" value="" vertex="1">
+          <mxGeometry height="252" width="140" x="707" y="637" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-21" parent="G2Mgj138FMsBbMFR-iqp-20" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp; tx_bit&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&amp;nbsp; ready&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;tx_en&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="183.84" width="140" y="26.16" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-22" parent="G2Mgj138FMsBbMFR-iqp-20" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="uart_tx" vertex="1">
+          <mxGeometry height="26.15916955017301" width="140" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-23" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="271" width="160" x="360" y="327" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-24" parent="G2Mgj138FMsBbMFR-iqp-23" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="242.86851211072664" width="160" y="28.131487889273355" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-25" parent="G2Mgj138FMsBbMFR-iqp-23" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="host PC" vertex="1">
+          <mxGeometry height="28.131487889273355" width="160" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-26" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;Packet Format - Big Endian&lt;br&gt;&lt;/b&gt;&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 16px;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(#000000, var(--ge-light-color, #ffffff));&quot;&gt;HEADER (1B)&lt;/span&gt;&amp;nbsp;| PAYLOAD (6B) |&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;font-size: 16px; background-color: transparent; color: light-dark(#000000, var(--ge-light-color, #ffffff));&quot;&gt;CRC (1B)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="50" width="338" x="600" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-27" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;jumpStyle=gap;exitX=1.003;exitY=0.721;exitDx=0;exitDy=0;exitPerimeter=0;">
+          <mxGeometry relative="1" x="0.1557" as="geometry">
+            <Array as="points">
+              <mxPoint x="1330" y="504.5" />
+              <mxPoint x="1330" y="690" />
+              <mxPoint x="848.4" y="690" />
+            </Array>
+            <mxPoint x="1210" y="505" as="sourcePoint" />
+            <mxPoint x="848.4" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-28" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;jumpStyle=gap;exitX=1.004;exitY=0.808;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1.001;entryY=0.365;entryDx=0;entryDy=0;entryPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-21">
+          <mxGeometry relative="1" x="0.275" as="geometry">
+            <Array as="points">
+              <mxPoint x="1340" y="530.9" />
+              <mxPoint x="1340" y="730.3" />
+            </Array>
+            <mxPoint x="850" y="730" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;//&lt;/div&gt;&lt;div&gt;8&lt;/div&gt;" vertex="1">
+          <mxGeometry height="26.16" width="31" x="1050" y="684" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-30" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=-0.011;exitY=0.166;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-31" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.009;entryY=0.128;entryDx=0;entryDy=0;entryPerimeter=0;exitX=1.019;exitY=0.181;exitDx=0;exitDy=0;exitPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-3">
+          <mxGeometry relative="1" x="-0.3014" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="399.1" />
+              <mxPoint x="650" y="316.1" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-33" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;span style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;FPGA&lt;/b&gt;&lt;/span&gt;" vertex="1">
+          <mxGeometry height="36" width="175" x="1120" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-34" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.005;entryY=0.703;entryDx=0;entryDy=0;entryPerimeter=0;exitX=-0.004;exitY=0.386;exitDx=0;exitDy=0;exitPerimeter=0;jumpStyle=gap;" target="G2Mgj138FMsBbMFR-iqp-6">
+          <mxGeometry relative="1" x="-0.0183" as="geometry">
+            <Array as="points">
+              <mxPoint x="671" y="734.1" />
+              <mxPoint x="671" y="580" />
+              <mxPoint x="920" y="580" />
+              <mxPoint x="920" y="499.1" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="G2Mgj138FMsBbMFR-iqp-13" edge="1" parent="1" source="G2Mgj138FMsBbMFR-iqp-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.012;entryY=0.211;entryDx=0;entryDy=0;exitX=0.997;exitY=0.276;exitDx=0;exitDy=0;entryPerimeter=0;innerLoopWaypoints=1;exitPerimeter=0;" target="G2Mgj138FMsBbMFR-iqp-6">
+          <mxGeometry relative="1" x="-0.2924" as="geometry">
+            <Array as="points">
+              <mxPoint x="860" y="349.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
