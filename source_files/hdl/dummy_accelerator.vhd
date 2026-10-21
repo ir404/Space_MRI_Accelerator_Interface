@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- Module Name:     dummy_accelerator
 -- Author:          Imran
--- Last Modified:   16 September 2026
+-- Last Modified:   21 September 2026
 --
 -- Description: A dummy hardware accelerator for testing the Host Interface. 
 --              It applies a basic Caesar cipher (+3 shift) to each of the 6 
@@ -20,25 +20,23 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE IEEE.NUMERIC_STD.ALL;
+USE work.space_mri_pkg.ALL;
 
 ENTITY dummy_accelerator IS
     PORT (
         clk      : IN STD_LOGIC;
         rst_n    : IN STD_LOGIC;
         acc_en   : IN STD_LOGIC;
-        data_in  : IN STD_LOGIC_VECTOR(47 DOWNTO 0);
-        data_out : OUT STD_LOGIC_VECTOR(47 DOWNTO 0);
+        data_in  : IN STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0);
+        data_out : OUT STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0);
         acc_done : OUT STD_LOGIC
     );
 END dummy_accelerator;
 
 ARCHITECTURE behavioural OF dummy_accelerator IS 
 
-    TYPE state_type IS (IDLE, ENCODE, FINISH);
+    TYPE state_type IS (IDLE, ENCODE, DONE);
     SIGNAL state_s : state_type := IDLE;
-
-    -- Shift value for the Caesar cipher (+3)
-    CONSTANT SHIFT_VAL : UNSIGNED(7 DOWNTO 0) := to_unsigned(3, 8);
 
 BEGIN 
 
@@ -60,15 +58,15 @@ BEGIN
                     END IF;
 
                 WHEN ENCODE =>
-                    -- Loop through the 48-bit vector, treating it as 6 independent bytes
-                    FOR i IN 0 TO 5 LOOP
-                        temp_byte := unsigned(data_in((i*8)+7 DOWNTO i*8)) + SHIFT_VAL;
+                    -- Loop through the payload, dynamically calculating the number of bytes
+                    FOR i IN 0 TO (PAYLOAD_BITS / 8) - 1 LOOP
+                        temp_byte := unsigned(data_in((i*8)+7 DOWNTO i*8)) + CAESAR_SHIFT_VAL;
                         data_out((i*8)+7 DOWNTO i*8) <= std_logic_vector(temp_byte);
                     END LOOP;
                     
-                    state_s <= FINISH;
+                    state_s <= DONE;
 
-                WHEN FINISH =>
+                WHEN DONE =>
                     acc_done <= '1';
                     
                     -- Handshake: Wait for the Host Interface to acknowledge and drop acc_en

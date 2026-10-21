@@ -1,19 +1,18 @@
 ----------------------------------------------------------------------------------
 -- Module Name:     uart_tx
 -- Author:          Imran
--- Last Modified:   1 September 2026
+-- Last Modified:   21 October 2026
 --
 -- Description: A customisable UART transmitter module. It takes parallel data 
---              and transmits it serially based on a configurable baud rate and 
---              system clock frequency. 
+--              and transmits it serially based on a configurable baud rate, 
+--              data width, and stop bit count.
 --              Configuration: 8N2
---              The transmission frame format consists of:
---                  1 Start bit ('0') + Data bits + 2 Stop bits ('1').
 --
 -- Generics:
 --   CLK_FREQ   : System clock frequency in Hz.
 --   BAUD_RATE  : Target transmission baud rate in bps.
---   DATA_WIDTH : Width of the data payload in bits (usually 8 bits).
+--   DATA_WIDTH : Width of the data payload in bits (usually 8).
+--   STOP_BITS  : Number of stop bits (usually 1 or 2).
 --
 -- Ports:
 --   clk        : System clock input.
@@ -30,13 +29,14 @@ USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY uart_tx IS
     GENERIC (
-        CLK_FREQ   : INTEGER := 100000000;  -- System clock frequency in Hz
-        BAUD_RATE  : INTEGER := 9600;       -- Target baud rate in bps
-        DATA_WIDTH : INTEGER := 8           -- Payload width in bits
+        CLK_FREQ   : INTEGER := 100_000_000; 
+        BAUD_RATE  : INTEGER := 9600;       
+        DATA_WIDTH : INTEGER := 8;          
+        STOP_BITS  : INTEGER := 2           
     );
     PORT (
         clk     : IN STD_LOGIC;
-        rst_n   : IN STD_LOGIC;         -- Active-low reset (asynchronous)
+        rst_n   : IN STD_LOGIC;        
         data    : IN STD_LOGIC_VECTOR(DATA_WIDTH-1 DOWNTO 0);
         tx_en   : IN STD_LOGIC;         -- HIGH to start serial transmission
         tx_rdy  : OUT STD_LOGIC;        -- HIGH when ready for new data (IDLE state)
@@ -46,10 +46,10 @@ END uart_tx;
 
 ARCHITECTURE behavioural OF uart_tx IS
 
-    CONSTANT BAUD_PERIOD    : INTEGER   := CLK_FREQ / BAUD_RATE;
-    CONSTANT PACKET_WIDTH   : INTEGER   := DATA_WIDTH + 3;      -- Start(1) + Data + Stop(2)
-    CONSTANT START_BIT      : STD_LOGIC := '0';
-    CONSTANT STOP_BIT       : STD_LOGIC := '1';
+    CONSTANT BAUD_PERIOD  : INTEGER   := CLK_FREQ / BAUD_RATE;
+    CONSTANT PACKET_WIDTH : INTEGER   := 1 + DATA_WIDTH + STOP_BITS; -- Start(1) + Data + Stop(N)
+    CONSTANT START_BIT    : STD_LOGIC := '0';
+    CONSTANT STOP_BIT     : STD_LOGIC := '1';
     
     -- State definition
     TYPE state_type IS (IDLE, LOAD_BIT, SEND_BIT);
@@ -68,14 +68,14 @@ BEGIN
         VARIABLE bit_ix_v : INTEGER RANGE 0 TO PACKET_WIDTH - 1;
     BEGIN 
         
-        IF rst_n = '0' THEN                 -- Asynchronous reset 
+        IF rst_n = '0' THEN                
             state_s  <= IDLE;
             timer_s  <= 0;
             packet_s <= (OTHERS => '1');
-            bit_ix_s <= 0;      -- Bit index to track which bit to transmit serially
+            bit_ix_s <= 0;      
             tx_reg_s <= STOP_BIT;
             
-        ELSIF rising_edge(clk) THEN         -- On clk rising edge 
+        ELSIF rising_edge(clk) THEN        
             state_v  := state_s;
             bit_ix_v := bit_ix_s;
 
@@ -85,9 +85,12 @@ BEGIN
                     bit_ix_v := 0;
                     
                     IF tx_en = '1' THEN 
-                        -- Assemble full frame: [Stop, Stop, Data, Start]
-                        packet_s <= STOP_BIT & STOP_BIT & data & START_BIT; 
-                        state_v  := LOAD_BIT;
+                        -- Dynamically assemble frame using slice assignments
+                        packet_s(0) <= START_BIT;
+                        packet_s(DATA_WIDTH DOWNTO 1) <= data;
+                        packet_s(PACKET_WIDTH - 1 DOWNTO DATA_WIDTH + 1) <= (OTHERS => STOP_BIT);
+                        
+                        state_v := LOAD_BIT;
                     END IF;
 
                 WHEN LOAD_BIT => 
