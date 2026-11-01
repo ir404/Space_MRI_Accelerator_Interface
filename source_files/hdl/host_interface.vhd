@@ -65,7 +65,7 @@ ARCHITECTURE behavioural OF host_interface IS
     SIGNAL counter_reg : INTEGER RANGE 0 TO HEADER_BITS + PAYLOAD_BITS + FCS_BITS := 0;
     
     -- 64-bit Shift Register for serialising the entire packet into the LFSR
-    SIGNAL crc_shift_s : STD_LOGIC_VECTOR(HEADER_BITS + PAYLOAD_BITS + FCS_BITS - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL crc_shift_reg : STD_LOGIC_VECTOR(HEADER_BITS + PAYLOAD_BITS + FCS_BITS - 1 DOWNTO 0) := (OTHERS => '0');
     
     -- Internal Signals for combinational CRC logic
     SIGNAL current_bit_s : STD_LOGIC;
@@ -82,7 +82,7 @@ ARCHITECTURE behavioural OF host_interface IS
 BEGIN 
 
     -- Concurrent assignments for LFSR feedback logic (CRC-8-ATM: x^8 + x^2 + x + 1)
-    current_bit_s <= crc_shift_s(crc_shift_s'high);
+    current_bit_s <= crc_shift_reg(crc_shift_reg'high);
     feedback_s    <= lfs_reg(7) XOR current_bit_s;
 
     PROCESS (clk, rst_n)
@@ -93,7 +93,7 @@ BEGIN
             payload_reg     <= (OTHERS => '0');
             counter_reg     <= 0;
             lfs_reg         <= (OTHERS => '0');
-            crc_shift_s     <= (OTHERS => '0');
+            crc_shift_reg   <= (OTHERS => '0');
             acc_en_s        <= '0';
             header_err_s    <= '0';
             crc_error_s     <= '0';
@@ -129,7 +129,7 @@ BEGIN
                             
                         ELSIF counter_reg = TOTAL_BYTES - 1 THEN
                             -- Byte 8: Capture FCS, load shift register, and prepare for CRC
-                            crc_shift_s <= header_reg & payload_reg & rx_data;
+                            crc_shift_reg <= header_reg & payload_reg & rx_data;
                             
                             counter_reg <=  HEADER_BITS + PAYLOAD_BITS + FCS_BITS;          -- total of 64 bits in packet
                             lfs_reg     <= (OTHERS => '0');
@@ -140,7 +140,7 @@ BEGIN
                 WHEN VERIFY_CRC =>
                     IF counter_reg > 0 THEN
                         -- Shift the 64-bit packet left by 1 bit
-                        crc_shift_s <= crc_shift_s(crc_shift_s'high - 1 DOWNTO 0) & '0';
+                        crc_shift_reg <= crc_shift_reg(crc_shift_reg'high - 1 DOWNTO 0) & '0';
                         
                         -- Apply LFSR XOR taps for CRC-8-ATM: 100000111
                         lfs_reg(0)          <= feedback_s;
