@@ -2,13 +2,14 @@
 ----------------------------------------------------------------------------------
 -- Script Name:     host_test.py
 -- Author:          Imran
--- Last Modified:   21 October 2026
+-- Last Modified:   06 November 2026
 --
 -- Description:     Host PC Simulator for the Space MRI Hardware Accelerator.
 --                  Interfaces with the FPGA via UART (115200 8N2) to send
 --                  8-byte command frames (Header + 6 Payload + 1 CRC-8-ATM)
---                  and receives the processed 6-byte payload. Includes testing
---                  features for sync byte calibration and unknown header routing.
+--                  and receives the processed 8-byte frame back from the FPGA.
+--                  Includes mathematical FCS validation of the returned packet,
+--                  sync byte calibration, and unknown header routing tests.
 ----------------------------------------------------------------------------------
 """
 
@@ -68,20 +69,39 @@ def create_packet(header: int, text: str) -> bytes:
 
 
 def process_packet(ser: serial.Serial, tx_packet: bytes) -> None:
-    """Transmits the packet to the FPGA and processes the response."""
+    """Transmits the packet to the FPGA and processes the 8-byte response."""
     print(f"TX Packet (Hex): {tx_packet.hex().upper()}")
     ser.write(tx_packet)
     
-    rx_packet = ser.read(6)
+    # Read the full 8-byte response (Header + 6 Result + 1 CRC)
+    rx_packet = ser.read(8)
     
-    if len(rx_packet) == 6:
-        print(f"RX Packet (Hex): {rx_packet.hex().upper()}")
-        # Null padding (0x00) is shifted by the cipher to 0x03. Strip it.
-        decoded_str = rx_packet.replace(b'\x03', b'').decode('utf-8', errors='ignore')
-        print(f"Cipher Result  : {decoded_str}")
+    if len(rx_packet) == 8:
+        print(f"\n--- Hardware Response ---")
+        print(f"Full RX Frame  : {rx_packet.hex().upper()}")
+        
+        # Split the packet to perform validation
+        rx_data_no_crc = rx_packet[:7]
+        rx_crc_received = rx_packet[7]
+        
+        # Validate the hardware's appended FCS against our mathematical expectation
+        rx_crc_calculated = calculate_crc8(rx_data_no_crc)
+        
+        if rx_crc_received == rx_crc_calculated:
+            print(f"CRC Check      : VALID (0x{rx_crc_received:02X})")
+            
+            # Extract only the 6 payload result bytes
+            result_bytes = rx_packet[1:7]
+            print(f"Result Bytes   : {result_bytes.hex().upper()}")
+            
+            # Null padding (0x00) is shifted by the cipher to 0x03. Strip it for display.
+            decoded_str = result_bytes.replace(b'\x03', b'').replace(b'\x00', b'').decode('utf-8', errors='ignore')
+            print(f"Cipher Result  : {decoded_str}\n")
+        else:
+            print(f"CRC Check      : FAILED (Expected 0x{rx_crc_calculated:02X}, got 0x{rx_crc_received:02X})\n")
     else:
-        print(f"Error: FPGA did not return the expected 6 bytes. Actual: {len(rx_packet)}.")
-        print("Check FPGA diagnostic LEDs for frame, header, or CRC errors.")
+        print(f"Error: FPGA did not return the expected 8 bytes. Actual: {len(rx_packet)}.")
+        print("Check FPGA diagnostic LEDs for frame, header, or CRC errors.\n")
 
 
 def main():
@@ -90,7 +110,7 @@ def main():
     send_sync_byte(ser)
     
     menu_prompt = (
-        "\nOptions:\n"
+        "Options:\n"
         "  [text]  : Enter up to 6 characters to encode\n"
         "  !sync   : Send sync byte (use if FPGA SW0 was toggled)\n"
         "  !err    : Send packet with an unknown header (0xAA)\n"

@@ -1,12 +1,13 @@
 ---------------------------------------------------------------------------------------
 -- Module Name:     host_interface
 -- Author:          Imran
--- Last Modified:   21 October 2026
+-- Last Modified:   06 November 2026
 --
 -- Description:     A Host Interface Controller and packet parser. It enforces a 
 --                  strict 8-byte fixed-length frame for all commands. It receives 
 --                  the full packet, verifies the CRC-8-ATM integrity, and then 
---                  decodes the header to manage hardware routing.
+--                  decodes the header to manage hardware routing. It also calculates
+--                  and appends a new CRC-8-ATM to the outgoing result packet.
 --
 -- Byte Order:      Big-Endian (Most Significant Byte received and transmitted first)
 --
@@ -51,25 +52,38 @@ ARCHITECTURE behavioural OF host_interface IS
 
     CONSTANT TOTAL_BYTES : INTEGER := (HEADER_BITS + PAYLOAD_BITS + FCS_BITS) / 8;          -- in a packet
 
+    -- Component Declaration for the new standalone CRC core
+    COMPONENT crc8_atm_core
+        PORT (
+            clk      : IN STD_LOGIC;
+            rst_n    : IN STD_LOGIC;
+            crc_rst  : IN STD_LOGIC;
+            en       : IN STD_LOGIC;
+            inp_bit  : IN STD_LOGIC;
+            crc_out  : OUT STD_LOGIC_VECTOR(7 DOWNTO 0)
+        );
+    END COMPONENT;
+
     -- State Sequence
-    TYPE state_type IS (IDLE, GET_PACKET, VERIFY_CRC, PROCESS_HEADER, ACC, HOUSEKEEPING, TX_RESULT, WAIT_TX_BUSY);
+    TYPE state_type IS (IDLE, GET_PACKET, VERIFY_CRC, PROCESS_HEADER, ACC, HOUSEKEEPING, CALC_TX_CRC, TX_RESULT, WAIT_TX_BUSY);
     SIGNAL state_s : state_type := IDLE;
 
     -- Internal Registers
     SIGNAL header_reg       : STD_LOGIC_VECTOR(HEADER_BITS-1 DOWNTO 0) := (OTHERS => '0');
     SIGNAL payload_reg      : STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0) := (OTHERS => '0');
-    SIGNAL lfs_reg          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => '0');
     SIGNAL acc_result_reg   : STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0) := (OTHERS => '0');
     
-    -- Dual-purpose counter: counts 8 bytes during RX, then counts 64 bits for CRC
+    -- Dual-purpose counter: counts 8 bytes during RX, then counts 64/56 bits for CRC and TX
     SIGNAL counter_reg : INTEGER RANGE 0 TO HEADER_BITS + PAYLOAD_BITS + FCS_BITS := 0;
     
-    -- 64-bit Shift Register for serialising the entire packet into the LFSR
+    -- 64-bit Shift Register for serialising the entire packet into the LFSR and out to TX
     SIGNAL crc_shift_reg : STD_LOGIC_VECTOR(HEADER_BITS + PAYLOAD_BITS + FCS_BITS - 1 DOWNTO 0) := (OTHERS => '0');
     
-    -- Internal Signals for combinational CRC logic
-    SIGNAL current_bit_s : STD_LOGIC;
-    SIGNAL feedback_s    : STD_LOGIC;
+    -- CRC Core Control Signals
+    SIGNAL crc_en_s      : STD_LOGIC;
+    SIGNAL crc_rst_s     : STD_LOGIC;
+    SIGNAL crc_inp_bit_s : STD_LOGIC;
+    SIGNAL crc_result_s  : STD_LOGIC_VECTOR(7 DOWNTO 0);
     
     -- Output Register Signals
     SIGNAL acc_en_s      : STD_LOGIC := '0';
@@ -81,9 +95,28 @@ ARCHITECTURE behavioural OF host_interface IS
 
 BEGIN 
 
-    -- Concurrent assignments for LFSR feedback logic (CRC-8-ATM: x^8 + x^2 + x + 1)
-    current_bit_s <= crc_shift_reg(crc_shift_reg'high);
-    feedback_s    <= lfs_reg(7) XOR current_bit_s;
+    -- Instantiate the CRC core
+    crc_inst : crc8_atm_core
+    PORT MAP (
+        clk      => clk,
+        rst_n    => rst_n,
+        crc_rst  => crc_rst_s,
+        en       => crc_en_s,
+        inp_bit  => crc_inp_bit_s,
+        crc_out  => crc_result_s
+    );
+
+    -- Combinatorial logic routing the FSM timing strictly to the CRC core
+    crc_inp_bit_s <= crc_shift_reg(crc_shift_reg'high);
+    crc_en_s  <= '1' 
+                WHEN ((state_s = VERIFY_CRC OR state_s = CALC_TX_CRC) AND counter_reg > 0) 
+                ELSE '0';
+    crc_rst_s <= '1' 
+                WHEN (state_s = GET_PACKET AND rx_valid = '1' AND counter_reg = TOTAL_BYTES - 1) 
+                    OR 
+                    (state_s = ACC AND acc_done = '1') 
+                ELSE '0';
+
 
     PROCESS (clk, rst_n)
     BEGIN
@@ -92,7 +125,6 @@ BEGIN
             header_reg      <= (OTHERS => '0');
             payload_reg     <= (OTHERS => '0');
             counter_reg     <= 0;
-            lfs_reg         <= (OTHERS => '0');
             crc_shift_reg   <= (OTHERS => '0');
             acc_en_s        <= '0';
             header_err_s    <= '0';
@@ -129,29 +161,21 @@ BEGIN
                             
                         ELSIF counter_reg = TOTAL_BYTES - 1 THEN
                             -- Byte 8: Capture FCS, load shift register, and prepare for CRC
+                            -- crc_rst_s goes HIGH combinationally here to clear the core
                             crc_shift_reg <= header_reg & payload_reg & rx_data;
-                            
-                            counter_reg <=  HEADER_BITS + PAYLOAD_BITS + FCS_BITS;          -- total of 64 bits in packet
-                            lfs_reg     <= (OTHERS => '0');
-                            state_s     <= VERIFY_CRC;
+                            counter_reg   <= HEADER_BITS + PAYLOAD_BITS + FCS_BITS; -- 64 bits total
+                            state_s       <= VERIFY_CRC;
                         END IF;
                     END IF;
 
                 WHEN VERIFY_CRC =>
                     IF counter_reg > 0 THEN
-                        -- Shift the 64-bit packet left by 1 bit
+                        -- Shift the 64-bit packet left by 1 bit to feed into the external LFSR
                         crc_shift_reg <= crc_shift_reg(crc_shift_reg'high - 1 DOWNTO 0) & '0';
-                        
-                        -- Apply LFSR XOR taps for CRC-8-ATM: 100000111
-                        lfs_reg(0)          <= feedback_s;
-                        lfs_reg(1)          <= lfs_reg(0) XOR feedback_s;
-                        lfs_reg(2)          <= lfs_reg(1) XOR feedback_s;
-                        lfs_reg(7 DOWNTO 3) <= lfs_reg(6 DOWNTO 2);
-                        
-                        counter_reg <= counter_reg - 1;
+                        counter_reg   <= counter_reg - 1;
                     ELSE
                         -- LFSR mathematically zeroes out if the frame is error-free
-                        IF lfs_reg = x"00" THEN
+                        IF crc_result_s = x"00" THEN
                             crc_valid_s <= '1';
                             state_s     <= PROCESS_HEADER;
                         ELSE
@@ -177,30 +201,45 @@ BEGIN
                     IF acc_done = '1' THEN
                         acc_en_s        <= '0';
                         acc_result_reg  <= acc_result;
-                        counter_reg     <= 0;               -- Reset counter to bit 0 for the TX loop
-                        state_s         <= TX_RESULT;
+                        -- Load 56 bits (Header + Result) into the top of the shift register
+                        -- crc_rst_s goes HIGH combinationally here to clear the core
+                        crc_shift_reg   <= header_reg & acc_result & x"00";
+                        counter_reg     <= HEADER_BITS + PAYLOAD_BITS; -- 56 bits to evaluate
+                        state_s         <= CALC_TX_CRC;
                     END IF;
 
                 WHEN HOUSEKEEPING =>
                     -- TODO: Trigger housekeeping logic here
                     state_s <= IDLE;
                     
+                WHEN CALC_TX_CRC =>
+                    IF counter_reg > 0 THEN
+                        -- Shift the packet left by 1 bit to feed into the external LFSR
+                        crc_shift_reg <= crc_shift_reg(crc_shift_reg'high - 1 DOWNTO 0) & '0';
+                        counter_reg   <= counter_reg - 1;
+                    ELSE
+                        -- Reconstruct the full 64-bit frame: Header + Result + New FCS
+                        crc_shift_reg <= header_reg & acc_result_reg & crc_result_s;
+                        counter_reg   <= 0;
+                        state_s       <= TX_RESULT;
+                    END IF;
+
                 WHEN TX_RESULT =>
                     IF tx_ready = '1' THEN
-                        -- Extract the MSB dynamically
-                        tx_data_s <= acc_result_reg(acc_result_reg'high DOWNTO acc_result_reg'high - 7);
+                        -- Extract the MSB dynamically from the 64-bit shift register
+                        tx_data_s <= crc_shift_reg(crc_shift_reg'high DOWNTO crc_shift_reg'high - 7);
                         tx_en_s   <= '1';
                         
                         -- Shift remaining bytes left to queue up the next transmission
-                        acc_result_reg <= acc_result_reg(acc_result_reg'high - 8 DOWNTO 0) & x"00";
+                        crc_shift_reg <= crc_shift_reg(crc_shift_reg'high - 8 DOWNTO 0) & x"00";
                         state_s        <= WAIT_TX_BUSY;
                     END IF;
 
                 WHEN WAIT_TX_BUSY =>
                     -- Wait for uart_tx module to register the enable pulse and drop its ready flag
                     IF tx_ready = '0' THEN
-                        IF counter_reg = (PAYLOAD_BITS / 8) - 1 THEN
-                            state_s <= IDLE;          -- All bytes sent
+                        IF counter_reg = TOTAL_BYTES - 1 THEN
+                            state_s <= IDLE;          -- All 8 bytes sent
                         ELSE
                             counter_reg <= counter_reg + 1;
                             state_s     <= TX_RESULT; -- Send next byte
