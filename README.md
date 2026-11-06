@@ -1,11 +1,11 @@
 # Space MRI - Hardware Acceleration Interface
 
-## 1. SYSTEM DESCRIPTION
+## 1. System Description
 The Space_MRI repository contains the VHDL hardware design files and Python simulation software for a high-reliability hardware-in-the-loop (HIL) acceleration interface. Designed for the Space MRI project, the architecture features a robust UART transceiver pipeline (8N2 configuration), a dynamic autobaud estimator, and a strict Host Interface Controller. The system enforces an 8-byte fixed-length packet protocol with hardware-accelerated CRC-8-ATM validation, ensuring secure data routing to internal processing modules like the upcoming SORN-based Hardware Acceleration Unit.
 
-## 2. COMPONENT OVERVIEW
+## 2. Component Overview
 
-### Hardware (VHDL)
+### 2.1 Hardware (VHDL)
 *   **space_mri_pkg.vhd**
     Centralises global system constants including baud rate, frame sizing, CRC polynomials, and command codes to ensure dynamic, single-source-of-truth instantiation across all modules.
 *   **autobaud_estimator.vhd**
@@ -21,11 +21,11 @@ The Space_MRI repository contains the VHDL hardware design files and Python simu
 *   **space_mri_top.vhd**
     The top-level structural wrapper integrating the transceiver pipeline, host controller, and accelerator, mapping internal diagnostic flags to physical board LEDs.
 
-### Software (Python)
+### 2.2 Software (Python)
 *   **host_test.py**
     A pyserial-based hardware-in-the-loop simulator. Handles autobaud calibration (`0x55`), constructs mathematically perfect 8-byte command frames (calculating the CRC-8-ATM dynamically), and processes the FPGA's asynchronous returns.
 
-## 3. TECHNICAL SPECIFICATIONS
+## 3. Technical Specifications
 
 | Parameter | Specification |
 | :--- | :--- |
@@ -38,16 +38,16 @@ The Space_MRI repository contains the VHDL hardware design files and Python simu
 | **Synchronisation** | `0x55` or `0b01010101` (ASCII 'U') |
 | **System Reset** | Active-low (Mapped to SW0: HIGH = Run, LOW = Reset) |
 
-## 4. COMMAND PROTOCOL
+## 4. Command Protocol
 
 All communications utilise a strict 8-byte frame. If a packet fails the CRC check or contains an unrecognised header, it is silently dropped by the hardware logic, and the respective error LED is triggered.
 
 *   **`0xA5` (Accelerator Command):** Routes the 6-byte payload to the hardware accelerator. Returns the processed 6-byte payload.
 *   **`0x5A` (Housekeeping Command):** Triggers internal system status routines (Payload bytes act as padding/dummy data).
 
-## 5. DIRECTORY STRUCTURE
+## 5. Directory Structure
 
-The repository is organised to separate synthesiseable logic, simulation environments, physical hardware constraints, and host software.
+The repository is organised to separate synthesizable logic, simulation environments, physical hardware constraints, and host software.
 
 ```text
 Space_MRI/
@@ -69,3 +69,8 @@ Space_MRI/
     └── xdc/                  
         ├── basys3_space_mri_top.xdc
         └── basys3_loopback.xdc
+```
+
+## 6. Acknowledgements & Attributions
+
+- Developed with assistance from **Google Gemini** for VHDL implementation, scripting and documentation. 
