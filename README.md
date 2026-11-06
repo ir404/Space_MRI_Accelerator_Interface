@@ -6,24 +6,26 @@ The Space_MRI repository contains the VHDL hardware design files and Python simu
 ## 2. Component Overview
 
 ### 2.1 Hardware (VHDL)
-*   **space_mri_pkg.vhd**
+*   **space_mri_pkg.vhd**  
     Centralises global system constants including baud rate, frame sizing, CRC polynomials, and command codes to ensure dynamic, single-source-of-truth instantiation across all modules.
-*   **autobaud_estimator.vhd**
+*   **autobaud_estimator.vhd**  
     Measures the initial synchronisation byte (`0x55`) to calculate the operational baud period. Monitors for timeouts and framing errors to dynamically drop locks and self-heal the communication line.
-*   **uart_rx.vhd & uart_rx_top.vhd**
+*   **uart_rx.vhd & uart_rx_top.vhd**  
     The 8N2 receiver subsystem. Utilises a bus-idle gatekeeper (waiting 1.5 baud periods) and the estimator's dynamic baud period to safely convert serial input into parallel payloads.
-*   **host_interface.vhd**
-    The main packet parser and controller. Enforces a strict 8-byte Big-Endian frame. It shifts data into a 48-bit payload register, verifies packet integrity via a 64-bit LFSR for CRC-8-ATM, decodes headers, triggers the hardware accelerator, and serialises the result for transmission.
-*   **dummy_accelerator.vhd**
+*   **crc8_atm_core.vhd**  
+    A standalone, reusable Galois LFSR IP core for CRC-8-ATM ($x^8 + x^2 + x + 1$). Computes remainder checksums on-the-fly without zero-padding, decoupling mathematical evaluation from the control path.
+*   **host_interface.vhd**  
+    The main packet parser and controller. Enforces a strict 8-byte Big-Endian frame. Instantiates `crc8_atm_core` to verify incoming packet integrity, decodes headers, triggers the hardware accelerator, and calculates and appends a new 1-byte FCS to the result payload prior to serial transmission.
+*   **dummy_accelerator.vhd**  
     A temporary placeholder processing unit implementing a +3 Caesar cipher on the 48-bit payload to verify FSM handshaking and data routing prior to SORN integration.
-*   **uart_tx.vhd**
+*   **uart_tx.vhd**  
     The 8N2 transmitter module. Dynamically slices and transmits data using a strict 1 start bit, 8 data bits, and 2 stop bits protocol.
-*   **space_mri_top.vhd**
+*   **space_mri_top.vhd**  
     The top-level structural wrapper integrating the transceiver pipeline, host controller, and accelerator, mapping internal diagnostic flags to physical board LEDs.
 
 ### 2.2 Software (Python)
-*   **host_test.py**
-    A pyserial-based hardware-in-the-loop simulator. Handles autobaud calibration (`0x55`), constructs mathematically perfect 8-byte command frames (calculating the CRC-8-ATM dynamically), and processes the FPGA's asynchronous returns.
+*   **host_test.py**  
+    A pyserial-based hardware-in-the-loop simulator. Handles autobaud calibration (`0x55`), constructs 8-byte command frames, receives the 8-byte response frame from the FPGA, and performs a local mathematical CRC check to validate bidirectional packet integrity.
 
 ## 3. Technical Specifications
 
@@ -56,6 +58,7 @@ Space_MRI/
     │   ├── space_mri_pkg.vhd
     │   ├── space_mri_top.vhd
     │   ├── host_interface.vhd
+    │   ├── crc8_atm_core.vhd
     │   ├── dummy_accelerator.vhd
     │   ├── autobaud_estimator.vhd
     │   ├── uart_rx_top.vhd
