@@ -1,19 +1,19 @@
 ---------------------------------------------------------------------------------------
 -- Module Name:     host_interface
 -- Author:          Imran
--- Last Modified:   06 November 2026
+-- Last Modified:   07 November 2026
 --
 -- Description:     A Host Interface Controller and packet parser. It enforces a 
 --                  strict 8-byte fixed-length frame for all commands. It receives 
 --                  the full packet, verifies the CRC-8-ATM integrity, and then 
---                  decodes the header to manage hardware routing. It also calculates
---                  and appends a new CRC-8-ATM to the outgoing result packet.
+--                  decodes the structured header (5-bit opcode, 3-bit error flag).
+--                  It calculates and appends a new CRC-8-ATM to the outgoing response.
 --
 -- Byte Order:      Big-Endian (Most Significant Byte received and transmitted first)
 --
--- Command Codes:
---      CMD_ACC :   0xA5 (8-byte packet: Header + 6 Payload + 1 CRC)
---      CMD_HK  :   0x5A (8-byte packet: Header + 6 Dummy + 1 CRC)
+-- Command Codes (Shifted to upper 5 bits):
+--      CMD_ACC :   0x08 (8-byte packet: Header + 6 Payload + 1 CRC)
+--      CMD_HK  :   0x10 (8-byte packet: Header + 6 Dummy + 1 CRC)
 ---------------------------------------------------------------------------------------
 
 LIBRARY IEEE;
@@ -65,7 +65,7 @@ ARCHITECTURE behavioural OF host_interface IS
     END COMPONENT;
 
     -- State Sequence
-    TYPE state_type IS (IDLE, GET_PACKET, VERIFY_CRC, PROCESS_HEADER, ACC, HOUSEKEEPING, CALC_TX_CRC, TX_RESULT, WAIT_TX_BUSY);
+    TYPE state_type IS (IDLE, GET_PACKET, VERIFY_CRC, PROCESS_HEADER, ACC, HOUSEKEEPING, TX_ERROR, CALC_TX_CRC, TX_RESULT, WAIT_TX_BUSY);
     SIGNAL state_s : state_type := IDLE;
 
     -- Internal Registers
@@ -113,8 +113,8 @@ BEGIN
                 ELSE '0';
     crc_rst_s <= '1' 
                 WHEN (state_s = GET_PACKET AND rx_valid = '1' AND counter_reg = TOTAL_BYTES - 1) 
-                    OR 
-                    (state_s = ACC AND acc_done = '1') 
+                    OR (state_s = ACC AND acc_done = '1') 
+                    OR (state_s = TX_ERROR)
                 ELSE '0';
 
 
@@ -180,7 +180,9 @@ BEGIN
                             state_s     <= PROCESS_HEADER;
                         ELSE
                             crc_error_s <= '1';
-                            state_s     <= IDLE;
+                            -- Inject CRC error flag into the received header and send it back
+                            header_reg  <= header_reg OR FLAG_ERR_CRC;
+                            state_s     <= TX_ERROR;
                         END IF;
                     END IF;
 
@@ -192,7 +194,9 @@ BEGIN
                     ELSE
                         -- unknown header received
                         header_err_s <= '1';
-                        state_s      <= IDLE;
+                        -- Keep the unknown opcode but inject the invalid command flag and send it back
+                        header_reg   <= header_reg OR FLAG_ERR_CMD;
+                        state_s      <= TX_ERROR;
                     END IF;
 
                 WHEN ACC =>
@@ -211,6 +215,14 @@ BEGIN
                 WHEN HOUSEKEEPING =>
                     -- TODO: Trigger housekeeping logic here
                     state_s <= IDLE;
+                    
+                WHEN TX_ERROR =>
+                    -- Zero out the payload since the command failed, load the error header
+                    acc_result_reg  <= (OTHERS => '0');
+                    -- Load the 56 bits (Error Header + 48-bit Zero Payload) into the shift register
+                    crc_shift_reg   <= header_reg & (PAYLOAD_BITS-1 DOWNTO 0 => '0') & x"00";
+                    counter_reg     <= HEADER_BITS + PAYLOAD_BITS; 
+                    state_s         <= CALC_TX_CRC;
                     
                 WHEN CALC_TX_CRC =>
                     IF counter_reg > 0 THEN
