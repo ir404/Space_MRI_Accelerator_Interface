@@ -88,3 +88,8 @@ Space_MRI/
     └── xdc/                  
         ├── basys3_space_mri_top.xdc
         └── basys3_loopback.xdc
+```
+
+ ## 7. Acknowledgements & Attributions
+
+Developed with assistance from **Google Gemini** for VHDL implementation, scripting and documentation. 
