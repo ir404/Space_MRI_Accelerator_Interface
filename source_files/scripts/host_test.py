@@ -2,14 +2,14 @@
 ----------------------------------------------------------------------------------
 -- Script Name:     host_test.py
 -- Author:          Imran
--- Last Modified:   07 November 2026
+-- Last Modified:   08 November 2026
 --
 -- Description:     Host PC Simulator for the Space MRI Hardware Accelerator.
 --                  Interfaces with the FPGA via UART (115200 8N2) to send
 --                  8-byte command frames (Header + 6 Payload + 1 CRC-8-ATM)
 --                  and receives the processed 8-byte frame back from the FPGA.
 --                  Includes structured header parsing (5-bit opcode, 3-bit flags),
---                  mathematical FCS validation, and error diagnostic testing.
+--                  mathematical FCS validation, and automated timeout recovery.
 ----------------------------------------------------------------------------------
 """
 
@@ -18,9 +18,10 @@ import time
 import sys
 
 # System Configurations
-COM_PORT  = 'COM5'      
-BAUD_RATE = 115200
-POLY      = 0x07        # CRC-8-ATM polynomial (x^8 + x^2 + x + 1)
+COM_PORT     = 'COM5'      
+BAUD_RATE    = 115200
+READ_TIMEOUT = 2           # Serial read timeout in seconds for link failure detection
+POLY         = 0x07        # CRC-8-ATM polynomial (x^8 + x^2 + x + 1)
 
 # Shifted Command Opcodes (Upper 5 Bits)
 CMD_ACC   = 0x08
@@ -50,7 +51,7 @@ def init_serial_port(port: str, baud: int) -> serial.Serial:
     """Initialises and returns the serial port connection."""
     try:
         # stopbits=2 matches the UART_STOP_BITS package constant
-        ser = serial.Serial(port, baud, stopbits=serial.STOPBITS_TWO, timeout=2)
+        ser = serial.Serial(port, baud, stopbits=serial.STOPBITS_TWO, timeout=READ_TIMEOUT)
         print(f"Successfully opened {port} at {baud} 8N2.")
         return ser
     except serial.SerialException:
@@ -60,7 +61,7 @@ def init_serial_port(port: str, baud: int) -> serial.Serial:
 
 def send_sync_byte(ser: serial.Serial) -> None:
     """Transmits the 0x55 sync byte to calibrate the FPGA autobaud estimator."""
-    print("\n[System] Transmitting 0x55 sync byte...")
+    print("[System] Transmitting 0x55 sync byte...")
     ser.write(b'\x55')
     time.sleep(0.1) # Wait for WAIT_BUS_IDLE (1.5 baud periods) phase
     ser.reset_input_buffer() 
@@ -94,15 +95,19 @@ def parse_header_flags(header_byte: int) -> None:
             print("  -> [FLAG] UART RX Baud/Framing Error")
 
 
-def process_packet(ser: serial.Serial, tx_packet: bytes) -> None:
-    """Transmits the packet to the FPGA and processes the 8-byte response."""
+def process_packet(ser: serial.Serial, tx_packet: bytes) -> bool:
+    """Transmits the packet, processes the response, and returns True on success."""
     print(f"TX Packet (Hex): {tx_packet.hex().upper()}")
     ser.write(tx_packet)
     
     # Read the full 8-byte response (Header + 6 Result + 1 CRC)
     rx_packet = ser.read(8)
     
-    if len(rx_packet) == 8:
+    if len(rx_packet) == 0:
+        print("Error: Read timeout. No response from FPGA.")
+        return False
+        
+    elif len(rx_packet) == 8:
         print(f"\n--- Hardware Response ---")
         print(f"Full RX Frame  : {rx_packet.hex().upper()}")
         
@@ -124,10 +129,8 @@ def process_packet(ser: serial.Serial, tx_packet: bytes) -> None:
             result_bytes = rx_packet[1:7]
             print(f"Result Bytes   : {result_bytes.hex().upper()}")
             
-            # If the lower 3 bits of the header are not 0, the payload is zeroed error data.
             # Only decode if no flags are present.
             if (rx_header & 0x07) == 0:
-                # Null padding (0x00) is shifted by the cipher to 0x03. Strip it for display.
                 decoded_str = result_bytes.replace(b'\x03', b'').replace(b'\x00', b'').decode('utf-8', errors='ignore')
                 print(f"Cipher Result  : {decoded_str}\n")
             else:
@@ -135,20 +138,37 @@ def process_packet(ser: serial.Serial, tx_packet: bytes) -> None:
                 
         else:
             print(f"TX CRC Check   : FAILED (Expected 0x{rx_crc_calculated:02X}, got 0x{rx_crc_received:02X})\n")
+        return True
+        
     else:
         print(f"Error: FPGA did not return the expected 8 bytes. Actual: {len(rx_packet)}.")
         print("Check FPGA diagnostic LEDs for fatal link errors.\n")
+        return True # Return true here so it doesn't trigger a sync retry on a partial packet
+
+
+def execute_with_retry(ser: serial.Serial, tx_packet: bytes) -> None:
+    """Attempts to process a packet, automatically recovering if a timeout occurs."""
+    success = process_packet(ser, tx_packet)
+    if not success:
+        print("\n[System] Link timeout. FPGA may have lost baud lock or restarted.")
+        send_sync_byte(ser)
+        print("\n[System] Retrying command transmission...")
+        final_attempt = process_packet(ser, tx_packet)
+        if not final_attempt:
+            print("\n[System] FATAL: Board is unresponsive. Check physical connections and power or if disabled via the switch.")
 
 
 def main():
     print("--- Space MRI Host PC Simulator ---")
     ser = init_serial_port(COM_PORT, BAUD_RATE)
-    send_sync_byte(ser)
+    
+    # Removed automatic send_sync_byte() to force the script to prove the link works
+    print("[System] Ready. Awaiting user commands.")
     
     menu_prompt = (
-        "Options:\n"
+        "\nOptions:\n"
         "  [text]  : Enter up to 6 characters to encode\n"
-        "  !sync   : Send sync byte (use if FPGA SW0 was toggled)\n"
+        "  !sync   : Force send sync byte (0x55)\n"
         f"  !err_h  : Send packet with an unknown header (0x{CMD_UNK:02X})\n"
         "  !err_c  : Send valid ACC packet but force a BAD CRC\n"
         "  q       : Quit\n"
@@ -163,16 +183,16 @@ def main():
         elif user_input.lower() == '!sync':
             send_sync_byte(ser)
         elif user_input.lower() == '!err_h':
-            print("Sending invalid header to trigger FLAG_ERR_CMD bounceback...")
+            print("\nSending invalid header to trigger FLAG_ERR_CMD bounceback...")
             tx_packet = create_packet(CMD_UNK, "TEST")
-            process_packet(ser, tx_packet)
+            execute_with_retry(ser, tx_packet)
         elif user_input.lower() == '!err_c':
-            print("Sending valid ACC command with corrupted FCS to trigger FLAG_ERR_CRC bounceback...")
+            print("\nSending valid ACC command with corrupted FCS to trigger FLAG_ERR_CRC bounceback...")
             tx_packet = create_packet(CMD_ACC, "TEST", force_bad_crc=True)
-            process_packet(ser, tx_packet)
+            execute_with_retry(ser, tx_packet)
         elif user_input != "":
             tx_packet = create_packet(CMD_ACC, user_input)
-            process_packet(ser, tx_packet)
+            execute_with_retry(ser, tx_packet)
 
     ser.close()
     print("Disconnected.")
