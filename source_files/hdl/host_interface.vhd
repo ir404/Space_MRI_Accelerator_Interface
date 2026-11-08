@@ -1,13 +1,14 @@
 ---------------------------------------------------------------------------------------
 -- Module Name:     host_interface
 -- Author:          Imran
--- Last Modified:   07 November 2026
+-- Last Modified:   08 November 2026
 --
 -- Description:     A Host Interface Controller and packet parser. It enforces a 
 --                  strict 8-byte fixed-length frame for all commands. It receives 
 --                  the full packet, verifies the CRC-8-ATM integrity, and then 
 --                  decodes the structured header (5-bit opcode, 3-bit error flag).
 --                  It calculates and appends a new CRC-8-ATM to the outgoing response.
+--                  Includes an RX Watchdog to recover from mid-packet link failures.
 --
 -- Byte Order:      Big-Endian (Most Significant Byte received and transmitted first)
 --
@@ -51,6 +52,7 @@ END host_interface;
 ARCHITECTURE behavioural OF host_interface IS 
 
     CONSTANT TOTAL_BYTES : INTEGER := (HEADER_BITS + PAYLOAD_BITS + FCS_BITS) / 8;          -- in a packet
+    CONSTANT ZERO_PAYLOAD : STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0) := (OTHERS => '0');
 
     -- Component Declaration for the new standalone CRC core
     COMPONENT crc8_atm_core
@@ -75,6 +77,9 @@ ARCHITECTURE behavioural OF host_interface IS
     
     -- Dual-purpose counter: counts 8 bytes during RX, then counts 64/56 bits for CRC and TX
     SIGNAL counter_reg : INTEGER RANGE 0 TO HEADER_BITS + PAYLOAD_BITS + FCS_BITS := 0;
+    
+    -- RX Watchdog Timer: Protects against FSM hangs during incomplete frame reception
+    SIGNAL rx_timer_reg : INTEGER RANGE 0 TO RX_TIMEOUT_MAX := 0;
     
     -- 64-bit Shift Register for serialising the entire packet into the LFSR and out to TX
     SIGNAL crc_shift_reg : STD_LOGIC_VECTOR(HEADER_BITS + PAYLOAD_BITS + FCS_BITS - 1 DOWNTO 0) := (OTHERS => '0');
@@ -125,6 +130,7 @@ BEGIN
             header_reg      <= (OTHERS => '0');
             payload_reg     <= (OTHERS => '0');
             counter_reg     <= 0;
+            rx_timer_reg    <= 0;
             crc_shift_reg   <= (OTHERS => '0');
             acc_en_s        <= '0';
             header_err_s    <= '0';
@@ -145,6 +151,8 @@ BEGIN
 
             CASE state_s IS 
                 WHEN IDLE =>
+                    rx_timer_reg <= 0;          -- Keep watchdog asleep
+                    
                     IF rx_valid = '1' THEN
                         -- Byte 1: Capture the Header
                         header_reg  <= rx_data;
@@ -154,6 +162,8 @@ BEGIN
 
                 WHEN GET_PACKET =>
                     IF rx_valid = '1' THEN
+                        rx_timer_reg <= 0;      -- Feed the watchdog (byte arrived in time)
+                        
                         IF counter_reg < TOTAL_BYTES - 1 THEN
                             -- Bytes 2 to 7: Shift into the 48-bit Payload register
                             payload_reg <= payload_reg(PAYLOAD_BITS - 9 DOWNTO 0) & rx_data;
@@ -165,6 +175,17 @@ BEGIN
                             crc_shift_reg <= header_reg & payload_reg & rx_data;
                             counter_reg   <= HEADER_BITS + PAYLOAD_BITS + FCS_BITS; -- 64 bits total
                             state_s       <= VERIFY_CRC;
+                        END IF;
+                        
+                    ELSE
+                        IF rx_timer_reg = RX_TIMEOUT_MAX THEN
+                            -- WATCHDOG TRIPPED: The host stopped sending mid-packet
+                            counter_reg  <= 0;
+                            rx_timer_reg <= 0;
+                            state_s      <= IDLE;   -- Flush everything and abort
+                        ELSE
+                            -- No byte received this clk cycle, increment the watchdog timer
+                            rx_timer_reg <= rx_timer_reg + 1;
                         END IF;
                     END IF;
 
@@ -220,7 +241,7 @@ BEGIN
                     -- Zero out the payload since the command failed, load the error header
                     acc_result_reg  <= (OTHERS => '0');
                     -- Load the 56 bits (Error Header + 48-bit Zero Payload) into the shift register
-                    crc_shift_reg   <= header_reg & (PAYLOAD_BITS-1 DOWNTO 0 => '0') & x"00";
+                    crc_shift_reg   <= header_reg & ZERO_PAYLOAD & x"00";
                     counter_reg     <= HEADER_BITS + PAYLOAD_BITS; 
                     state_s         <= CALC_TX_CRC;
                     

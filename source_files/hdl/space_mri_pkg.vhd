@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- Package Name:    space_mri_pkg
 -- Author:          Imran
--- Last Modified:   07 November 2026
+-- Last Modified:   08 November 2026
 
 -- Description:  Global constants and types for the Space MRI Hardware Accelerator.
 --               Includes the 5-bit/3-bit structured command and error header.
@@ -15,7 +15,7 @@ PACKAGE space_mri_pkg IS
 
     -- 1. System Constants
     CONSTANT SYS_CLK_FREQ : NATURAL := 100_000_000;                 -- 100 MHz Basys 3 Clock
-    CONSTANT BAUD_RATE    : NATURAL := 115200;
+    CONSTANT BAUD_RATE    : NATURAL := 115200;                      -- used in uart_tx
 
     -- 2. Communication Protocol Codes (Header Bits 7:3)
     -- Base opcodes are shifted left by 3 bits to leave room for error flags.
@@ -40,6 +40,7 @@ PACKAGE space_mri_pkg IS
     CONSTANT FCS_BITS       : INTEGER := 8;
     CONSTANT UART_DATA_BITS : INTEGER := 8;
     CONSTANT UART_STOP_BITS : INTEGER := 2;
+    CONSTANT RX_TIMEOUT_MAX : INTEGER := 500_000;                   -- 5 ms timeout at 100 MHz
     
     -- 6. Dummy Accelerator Parameters
     CONSTANT CAESAR_SHIFT_VAL : UNSIGNED(7 DOWNTO 0) := to_unsigned(3, 8);
