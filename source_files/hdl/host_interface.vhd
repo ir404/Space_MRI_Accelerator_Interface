@@ -1,7 +1,7 @@
 ---------------------------------------------------------------------------------------
 -- Module Name:     host_interface
 -- Author:          Imran
--- Last Modified:   08 November 2026
+-- Last Modified:   13 November 2026
 --
 -- Description:     A Host Interface Controller and packet parser. It enforces a 
 --                  strict 8-byte fixed-length frame for all commands. It receives 
@@ -37,10 +37,11 @@ ENTITY host_interface IS
         tx_en      : OUT STD_LOGIC;
         
         -- Hardware Accelerator Interface
-        acc_data   : OUT STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0);         -- payload data sent to acc
-        acc_result : IN STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0);          -- calculated result from the acc
+        acc_data   : OUT STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0);        -- payload data sent to acc
+        acc_result : IN STD_LOGIC_VECTOR(PAYLOAD_BITS-1 DOWNTO 0);         -- calculated result from the acc
         acc_en     : OUT STD_LOGIC;
         acc_done   : IN STD_LOGIC;
+        acc_err    : IN STD_LOGIC;                                         -- HIGH if accelerator internal fault occurs
         
         -- Diagnostic Outputs
         header_err : OUT STD_LOGIC;
@@ -114,13 +115,13 @@ BEGIN
     -- Combinatorial logic routing the FSM timing strictly to the CRC core
     crc_inp_bit_s <= crc_shift_reg(crc_shift_reg'high);
     crc_en_s  <= '1' 
-                WHEN ((state_s = VERIFY_CRC OR state_s = CALC_TX_CRC) AND counter_reg > 0) 
-                ELSE '0';
+                 WHEN ((state_s = VERIFY_CRC OR state_s = CALC_TX_CRC) AND counter_reg > 0) 
+                 ELSE '0';
     crc_rst_s <= '1' 
-                WHEN (state_s = GET_PACKET AND rx_valid = '1' AND counter_reg = TOTAL_BYTES - 1) 
-                    OR (state_s = ACC AND acc_done = '1') 
-                    OR (state_s = TX_ERROR)
-                ELSE '0';
+                 WHEN (state_s = GET_PACKET AND rx_valid = '1' AND counter_reg = TOTAL_BYTES - 1) 
+                     OR (state_s = ACC AND acc_done = '1') 
+                     OR (state_s = TX_ERROR)
+                 ELSE '0';
 
 
     PROCESS (clk, rst_n)
@@ -224,13 +225,20 @@ BEGIN
                     acc_en_s <= '1'; 
                     
                     IF acc_done = '1' THEN
-                        acc_en_s        <= '0';
-                        acc_result_reg  <= acc_result;
-                        -- Load 56 bits (Header + Result) into the top of the shift register
-                        -- crc_rst_s goes HIGH combinationally here to clear the core
-                        crc_shift_reg   <= header_reg & acc_result & x"00";
-                        counter_reg     <= HEADER_BITS + PAYLOAD_BITS; -- 56 bits to evaluate
-                        state_s         <= CALC_TX_CRC;
+                        acc_en_s <= '0';
+                        
+                        IF acc_err = '1' THEN
+                            -- Accelerator flagged an internal fault
+                            header_reg <= header_reg OR FLAG_ERR_ACC;
+                            state_s    <= TX_ERROR;
+                        ELSE
+                            acc_result_reg  <= acc_result;
+                            -- Load 56 bits (Header + Result) into the top of the shift register
+                            -- crc_rst_s goes HIGH combinationally here to clear the core
+                            crc_shift_reg   <= header_reg & acc_result & x"00";
+                            counter_reg     <= HEADER_BITS + PAYLOAD_BITS; -- 56 bits to evaluate
+                            state_s         <= CALC_TX_CRC;
+                        END IF;
                     END IF;
 
                 WHEN HOUSEKEEPING =>
@@ -239,7 +247,7 @@ BEGIN
                     
                 WHEN TX_ERROR =>
                     -- Zero out the payload since the command failed, load the error header
-                    acc_result_reg  <= (OTHERS => '0');
+                    acc_result_reg  <= ZERO_PAYLOAD;
                     -- Load the 56 bits (Error Header + 48-bit Zero Payload) into the shift register
                     crc_shift_reg   <= header_reg & ZERO_PAYLOAD & x"00";
                     counter_reg     <= HEADER_BITS + PAYLOAD_BITS; 
@@ -265,7 +273,7 @@ BEGIN
                         
                         -- Shift remaining bytes left to queue up the next transmission
                         crc_shift_reg <= crc_shift_reg(crc_shift_reg'high - 8 DOWNTO 0) & x"00";
-                        state_s        <= WAIT_TX_BUSY;
+                        state_s       <= WAIT_TX_BUSY;
                     END IF;
 
                 WHEN WAIT_TX_BUSY =>

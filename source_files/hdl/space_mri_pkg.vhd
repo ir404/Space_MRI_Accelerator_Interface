@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- Package Name:    space_mri_pkg
 -- Author:          Imran
--- Last Modified:   08 November 2026
+-- Last Modified:   13 November 2026
 
 -- Description:  Global constants and types for the Space MRI Hardware Accelerator.
 --               Includes the 5-bit/3-bit structured command and error header.
@@ -28,7 +28,7 @@ PACKAGE space_mri_pkg IS
     -- These masks are injected into the lower 3 bits of a command echo during failures.
     CONSTANT FLAG_ERR_CMD  : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"04"; -- Bit 2: Invalid CMD
     CONSTANT FLAG_ERR_CRC  : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"02"; -- Bit 1: CRC fail
-    CONSTANT FLAG_ERR_BAUD : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"01"; -- Bit 0: Rx Baud Err
+    CONSTANT FLAG_ERR_ACC  : STD_LOGIC_VECTOR(7 DOWNTO 0) := x"01"; -- Bit 0: Accelerator Fault
 
     -- 4. Data Integrity (CRC)
     -- CRC-8-ATM Polynomial: x^8 + x^2 + x + 1
