@@ -1,14 +1,19 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 use ieee.fixed_pkg.all;
 
+library work;
 use work.AcceleratorPKG.all;
+use work.Sorn.all;
+use work.SornManipulatorLimits.all;
+use work.global_pkg.all;
 
 entity accelerator is
 	generic
 	(
-		LFSR_SIZE: integer range 1 to 30           := 12;
-		NUM_CORES: integer range 1 to integer'high := 1
+		LFSR_SIZE: integer range 1 to 30           := 12; -- Forwarded to ik_evaluator and ik_core
+		NUM_CORES: integer range 1 to integer'high := 1   -- Only NUM_CORES = 1 is validated
 	);
 	port
 	(
@@ -28,38 +33,46 @@ entity accelerator is
 		j5_in_rad: out SornFixed_t; -- Joint5 in radians
 		busy     : out std_ulogic;  -- '1' if currently busy else '0'
 
-		valid: out std_ulogic;        -- High for exactly one clock cycle when the computation is finished
-		err : out AcceleratorError_t -- Indicates an error
+		valid: out std_ulogic;        -- High for two clock cycles when the computation is finished (as in the reference design)
+		err  : out AcceleratorError_t; -- Indicates an error
 
+		time_in_compute: out integer -- Clock cycles spent in the COMPUTING state
 	);
 end entity accelerator;
 
 architecture rtl of accelerator is
 
-	type state_t is
-	(
-		IDLE,
-		COMPUTING
-	);
+	type state_t is (IDLE, COMPUTING);
 
 	signal state     : state_t            := IDLE;
 	signal start_prev: std_ulogic         := '0';
-	signal valid_r    : std_ulogic         := '0';
+	signal valid_r   : std_ulogic         := '0';
 	signal error_r   : AcceleratorError_t := ERR_NONE;
 
-	-- Random values, they never change
-	constant J0_MOCK: SornFixed_t := to_sfixed(1.375, SornFixed_t'left, SornFixed_t'right);
-	constant J1_MOCK: SornFixed_t := to_sfixed(-2.0625, SornFixed_t'left, SornFixed_t'right);
-	constant J2_MOCK: SornFixed_t := to_sfixed(0.8125, SornFixed_t'left, SornFixed_t'right);
-	constant J3_MOCK: SornFixed_t := to_sfixed(-3.25, SornFixed_t'left, SornFixed_t'right);
-	constant J4_MOCK: SornFixed_t := to_sfixed(2.5, SornFixed_t'left, SornFixed_t'right);
-	constant J5_MOCK: SornFixed_t := to_sfixed(-0.4375, SornFixed_t'left, SornFixed_t'right);
+	-- For IK-Evaluator
+	signal cur_sine, cur_cosine: SornArr_t(5 downto 0);
+	signal fk_x, fk_y, fk_z                   : Sorn_t;
+	signal ik_done                            : std_ulogic;
 
-	constant COMPUTE_CYCLES: integer := 2 ** LFSR_SIZE / NUM_CORES;
+	-- Error calculation
+	signal best_squared_error: Sorn_t := FULL_SORN;
+	signal cur_squared_error : Sorn_t;
+	signal output_valid      : std_ulogic;
 
-	signal cycle_cnt: integer range 0 to COMPUTE_CYCLES := 0;
+	-- Signals for Joint Angles --------------------------------------
+	signal fxp_arr: FxpArr_t(5 downto 0) := (others => (others => '0'));
+	-----------------------------------------------------------------
+
+	-- Signals for Target --------------------------------------------
+	signal target_buffer: SornArr_t(2 downto 0) := (others => EMPTY_SORN);
+	-----------------------------------------------------------------
+
+	-- Performance Measurements
+	signal timer1            : integer := 0;
+	signal time_in_compute_r : integer := 0;
+	-----------------------------------------------------------------
+
 begin
-	-- rising edge triggers start
 	start_edge: process(clk)
 	begin
 		if rising_edge(clk) then
@@ -73,42 +86,91 @@ begin
 			valid_r <= '0';
 
 			if reset = '1' then
-				state     <= IDLE;
-				error_r   <= ERR_NONE;
-				cycle_cnt <= 0;
+				state   <= IDLE;
+				error_r <= ERR_NONE;
+
+				timer1            <= 0;
+				time_in_compute_r <= 0;
+
+				target_buffer <= (others => EMPTY_SORN);
+				fxp_arr       <= (others => (others => '0'));
+
+				best_squared_error <= FULL_SORN;
+
 			else
-				case state is
+				timer1 <= timer1 + 1;
 
-					when IDLE =>
-						if start = '1' and start_prev = '0' then
-							state     <= COMPUTING;
-							cycle_cnt <= 0;
-							error_r   <= ERR_NONE;
-						end if;
+				if busy = '1' and output_valid = '1' then
+					if (cur_squared_error.bits < best_squared_error.bits and
+					((fk_x.bits and target_buffer(X).bits) /= (SornVector_t'range => '0') and
+					 (fk_y.bits and target_buffer(Y).bits) /= (SornVector_t'range => '0') and
+					 (fk_z.bits and target_buffer(Z).bits) /= (SornVector_t'range => '0'))) then
 
-					when COMPUTING =>
-						-- wait 2**LFSR_SIZE / NUM_CORES cycles
-						if cycle_cnt = COMPUTE_CYCLES - 1 then
-							state  <= IDLE;
-							valid_r <= '1';
-						else
-							cycle_cnt <= cycle_cnt + 1;
-						end if;
+						for i in O1 to O6 loop
+							fxp_arr(i) <= sincos_to_angle(cur_sine(i).bits, cur_cosine(i).bits);
+						end loop;
 
-				end case;
+						-- Save best results
+						best_squared_error <= cur_squared_error;
+					end if;
+				end if;
+
+				-- Were done if the inverse kinematics cores are done
+				if ik_done = '1' then
+					if busy = '1' then
+						time_in_compute_r <= timer1;
+					end if;
+
+					state   <= IDLE;
+					valid_r <= '1';
+				end if;
+
+				if start = '1' and start_prev = '0' and state = IDLE then
+					state             <= COMPUTING;
+					timer1            <= 0;
+					time_in_compute_r <= 0;
+					target_buffer <= (work.SornFixed.to_sorn(target_x), work.SornFixed.to_sorn(target_y), work.SornFixed.to_sorn(target_z));
+
+					best_squared_error <= FULL_SORN;
+				end if;
 			end if;
 		end if;
 	end process;
 
-	busy <= '1' when state = COMPUTING else '0';
-	valid <= valid_r;
-	err  <= error_r;
+	ik_evaluator_inst: entity work.ik_evaluator
+	generic map
+	(
+		NUM_IK_CORES => NUM_CORES,
+		LFSR_SIZE    => LFSR_SIZE
+	)
+	port map
+	(
+		clk            => clk,
+		rst            => reset or not busy,
+		enable         => busy,
+		output_valid   => output_valid,
+		done           => ik_done,
+		target         => target_buffer,
+		best_deviation => cur_squared_error,
+		best_ls        => cur_sine,
+		best_lc        => cur_cosine,
 
-	j0_in_rad <= J0_MOCK;
-	j1_in_rad <= J1_MOCK;
-	j2_in_rad <= J2_MOCK;
-	j3_in_rad <= J3_MOCK;
-	j4_in_rad <= J4_MOCK;
-	j5_in_rad <= J5_MOCK;
+		fk_x    => fk_x,
+		fk_y    => fk_y,
+		fk_z    => fk_z
+	);
+
+	j0_in_rad <= fxp_arr(0);
+	j1_in_rad <= fxp_arr(1);
+	j2_in_rad <= fxp_arr(2);
+	j3_in_rad <= fxp_arr(3);
+	j4_in_rad <= fxp_arr(4);
+	j5_in_rad <= fxp_arr(5);
+
+	busy  <= '1' when state = COMPUTING else '0';
+	valid <= valid_r;
+	err   <= error_r;
+
+	time_in_compute <= time_in_compute_r;
 
 end architecture;

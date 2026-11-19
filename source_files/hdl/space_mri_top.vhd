@@ -173,7 +173,9 @@ BEGIN
             -- Handshaking and Status
             busy      => OPEN,          -- Busy flag not required by host_interface
             valid     => acc_done_s,
-            err       => sorn_err_s
+            err       => sorn_err_s,
+            
+            time_in_compute => OPEN
         );
         
     -- 4. UART Transmitter
