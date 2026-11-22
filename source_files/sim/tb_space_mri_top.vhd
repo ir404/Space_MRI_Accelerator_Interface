@@ -60,14 +60,14 @@ BEGIN
 
 		-- Transmit test SORN coordinates with the correct CRC
         -- Send 0x08050506000000FE (X=0.3125, Y=0.3125, Z=0.375, CRC=0xFE)
-        send_byte(x"08");
-        send_byte(x"05");
+        send_byte(x"08");		-- header byte (command_acc)
+        send_byte(x"05");		-- payload byte [6]
         send_byte(x"05");
         send_byte(x"06");
         send_byte(x"00");
         send_byte(x"00");
-        send_byte(x"00");
-        send_byte(x"FE");
+        send_byte(x"00");		-- payload byte [0]
+        send_byte(x"FE");		-- crc
 
         WAIT FOR 2 ms;
         REPORT "Simulation finished";
