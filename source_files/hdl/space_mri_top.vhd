@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- Module Name:     space_mri_top
 -- Author:          Imran
--- Last Modified:   13 November 2026
+-- Last Modified:   21 November 2026
 --
 -- Description: Top-level structural wrapper for the Space MRI system.
 --              It integrates the UART receiver subsystem, the Host Interface 
@@ -36,6 +36,17 @@ ENTITY space_mri_top IS
 END space_mri_top;
 
 ARCHITECTURE structural OF space_mri_top IS
+
+    -- Clocking Wizard MMCM (100 MHz board oscillator -> 25 MHz system clock)
+    COMPONENT clk_wiz_0
+        PORT (
+            clk_in1  : IN  STD_LOGIC;
+            clk_out1 : OUT STD_LOGIC
+        );
+    END COMPONENT;
+
+    -- Derived 25 MHz global system clock
+    SIGNAL sys_clk_25m     : STD_LOGIC;
 
     -- Signals between UART RX and Host Interface
     SIGNAL rx_data_s       : STD_LOGIC_VECTOR(UART_DATA_BITS-1 DOWNTO 0);
@@ -84,6 +95,13 @@ ARCHITECTURE structural OF space_mri_top IS
 
 BEGIN
 
+    -- 0. System Clock Generation (100 MHz -> 25 MHz)
+    clk_gen_inst : clk_wiz_0
+        PORT MAP (
+            clk_in1  => clk,
+            clk_out1 => sys_clk_25m
+        );
+
     -- Route internal status signals to top-level pins for monitoring
     baud_locked_out <= baud_locked_s;
     frame_err_out   <= frame_err_s;
@@ -109,7 +127,7 @@ BEGIN
             DATA_WIDTH  => UART_DATA_BITS
         )
         PORT MAP (
-            clk         => clk,
+            clk         => sys_clk_25m,
             rst_n       => rst_n,
             uart_rx_bit => uart_rx_bit,
             data        => rx_data_s,
@@ -121,7 +139,7 @@ BEGIN
     -- 2. Host Interface / Packet Parser
     host_interface_inst : ENTITY work.host_interface
         PORT MAP (
-            clk         => clk,
+            clk         => sys_clk_25m,
             rst_n       => rst_n,
             
             -- RX routing
@@ -153,7 +171,7 @@ BEGIN
             NUM_CORES => 1
         )
         PORT MAP (
-            clk       => clk,
+            clk       => sys_clk_25m,
             reset     => acc_reset_s,
             
             -- Incoming Coordinates
@@ -187,7 +205,7 @@ BEGIN
             STOP_BITS  => UART_STOP_BITS
         )
         PORT MAP (
-            clk        => clk,
+            clk        => sys_clk_25m,
             rst_n      => rst_n,
             data       => tx_data_s,
             tx_en      => tx_en_s,

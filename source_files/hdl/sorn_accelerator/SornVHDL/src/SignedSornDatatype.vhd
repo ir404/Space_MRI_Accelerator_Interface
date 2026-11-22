@@ -280,8 +280,8 @@ package body SignedSornDatatype is
 		-- So we need to work around it
 		x_sign := (not cmp_real(exponent mod 2.0, 0.0) and al.low_bound  < 0.0);
 		y_sign := (not cmp_real(exponent mod 2.0, 0.0) and ah.high_bound < 0.0);
-		x := abs(al.low_bound)  ** exponent;
-		y := abs(ah.high_bound) ** exponent;
+		x := (abs(al.low_bound))  ** exponent;
+		y := (abs(ah.high_bound)) ** exponent;
 
 		if x_sign then
 			x := -x;

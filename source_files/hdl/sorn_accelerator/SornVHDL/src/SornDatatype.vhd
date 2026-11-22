@@ -36,7 +36,10 @@ package SornDatatype is
 	function cos(datatype: SornDatatype_t; a: std_logic_vector) return std_logic_vector;
 	function absolute(datatype: SornDatatype_t; a: std_logic_vector) return std_logic_vector;
 	function map_set_to_bits(datatype: SornDatatype_t; param: RealSet_t) return std_logic_vector;
+	
+	-- synthesis translate_off
 	function from_string(s: string) return SornDatatype_t;
+	-- synthesis translate_on
 
 end package;
 
@@ -267,8 +270,8 @@ package body SornDatatype is
 		-- So we need to work around it
 		x_sign := (not cmp_real(exponent mod 2.0, 0.0) and al.low_bound  < 0.0);
 		y_sign := (not cmp_real(exponent mod 2.0, 0.0) and ah.high_bound < 0.0);
-		x := abs(al.low_bound)  ** exponent;
-		y := abs(ah.high_bound) ** exponent;
+		x := (abs(al.low_bound))  ** exponent;
+		y := (abs(ah.high_bound)) ** exponent;
 
 		if x_sign then
 			x := -x;
@@ -368,6 +371,7 @@ package body SornDatatype is
 		return map_set_to_bits(datatype, resulting_set);
 	end function;
 
+	-- synthesis translate_off
 	function from_string(s: string) return SornDatatype_t is
 		variable datatype: SornDatatype_t;
 		variable cur_set: RealSet_t;
@@ -428,5 +432,6 @@ package body SornDatatype is
 
 		return datatype;
 	end function;
+	-- synthesis translate_on
 
 end package body;

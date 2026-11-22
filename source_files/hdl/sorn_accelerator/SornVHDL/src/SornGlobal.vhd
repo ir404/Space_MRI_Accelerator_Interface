@@ -1,17 +1,43 @@
 library work;
+use work.SornUtil.all;
 use work.SornDatatype.all;
 
 package SornGlobal is
-	-- SORN Datatype definition
-
-	--constant datatype: SornDatatype_t := from_string("[-inf,-10.0)[-10.0,-9.0)[-9.0,-8.0)[-8.0,-7.0)[-7.0,-6.0)[-6.0,-5.0)[-5.0,-4.0)[-4.0,-3.0)[-3.0,-2.0)[-2.0,-1.5)[-1.5,-1.0)[-1.0,-0.75)[-0.75,-0.5)[-0.5,-0.25][-0.25,0.0)[0.0,0.0](0.0,0.25](0.25,0.5](0.5,0.75](0.75,1.0](1.0,1.5](1.5,2.0](2.0,3.0](3.0,4.0][4.0,5.0][5.0,6.0][6.0,7.0][7.0,8.0][8.0,9.0][9.0,10.0][10.0,inf]");
-  	--constant datatype: SornDatatype_t := from_string("[-inf,-7.0)[-7.0,-6.0)[-6.0,-5.0)[-5.0,-4.0)[-4.0,-3.0)[-3.0,-2.0)[-2.0,-1.5)[-1.5,-1.0)[-1.0,-0.875)[-0.875,-0.75)[-0.75,-0.625)[-0.625,-0.5)[-0.5,-0.375)[-0.375,-0.25)[-0.25,-0.125)[-0.125,0.0)[0.0,0.0](0.0,0.125](0.125,0.25](0.25,0.375](0.375,0.5](0.5,0.625](0.625,0.75](0.75,0.875](0.875,1.0](1.0,1.5](1.5,2.0](2.0,3.0](3.0,4.0](4.0,5.0](5.0,6.0](6.0,7.0](7.0,inf]");
-	--constant datatype: SornDatatype_t := from_string("[-inf,-2.5)[-2.5,-1.5)[-1.5,-1.0)[-1.0,-0.75)[-0.75,-0.5)[-0.5,-0.25)[-0.25,0.0)[0.0,0.0](0.0,0.25](0.25,0.5](0.5,0.75](0.75,1.0](1.0,1.5](1.5,2.5](2.5,inf]");
-	--constant datatype: SornDatatype_t := from_string("[-inf,-1.0)[-1.0,-0.75)[-0.75,-0.5)[-0.5,-0.2992)[-0.2992,-0.2992](-0.2992,-0.254)[-0.254,-0.254](-0.254,-0.14)[-0.14,-0.14](-0.14,-0.033)[-0.033,-0.033](-0.033,-0.02)[-0.02,-0.02](-0.02,0.0)[0.0,0.0](0.0,0.02)[0.02,0.02](0.02,0.033)[0.033,0.033](0.033,0.14)[0.14,0.14](0.14,0.149)[0.149,0.149](0.149,0.254)[0.254,0.254](0.254,0.2992)[0.2992,0.2992](0.2992,0.5712)[0.5712,0.5712](0.5712,1.0)[1.0,1.0](1.0,inf]");
- 
-	-- 15 intervals
-	--constant datatype: SornDatatype_t := from_string("[-inf,-1.0)[-1.0,-0.75)[-0.75,-0.45)[-0.45,-0.2)[-0.2,-0.08)[-0.08,-0.02)[-0.02,0.0)[0.0,0.0](0.0,0.02](0.02,0.08](0.08,0.2](0.2,0.45](0.45,0.75](0.75,1.0](1.0,inf]");
-
-	-- Best
-	constant datatype: SornDatatype_t := from_string("[-inf,-1.0)[-1.0,-0.85381)[-0.85381,-0.71554)[-0.71554,-0.58566)[-0.58566,-0.46476)[-0.46476,-0.35355)[-0.35355,-0.25298)[-0.25298,-0.16432)[-0.16432,-0.08944)[-0.08944,-0.03162)[-0.03162,0.0)[0.0,0.0](0.0,0.03162](0.03162,0.08944](0.08944,0.16432](0.16432,0.25298](0.25298,0.35355](0.35355,0.46476](0.46476,0.58566](0.58566,0.71554](0.71554,0.85381](0.85381,1.0](1.0,inf]");
+    function init_sorn_datatype return SornDatatype_t;
+    constant datatype : SornDatatype_t := init_sorn_datatype;
 end package;
+
+package body SornGlobal is
+    function init_sorn_datatype return SornDatatype_t is
+        variable dt : SornDatatype_t;
+    begin
+        dt.cur_size := 0;
+
+        -- 23 SORN intervals matching the original specification
+        append(dt, (low_bound => -REAL_INF, high_bound => -1.0,     low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -1.0,      high_bound => -0.85381, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.85381,  high_bound => -0.71554, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.71554,  high_bound => -0.58566, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.58566,  high_bound => -0.46476, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.46476,  high_bound => -0.35355, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.35355,  high_bound => -0.25298, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.25298,  high_bound => -0.16432, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.16432,  high_bound => -0.08944, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.08944,  high_bound => -0.03162, low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound => -0.03162,  high_bound =>  0.0,     low_bound_open => false, high_bound_open => true));
+        append(dt, (low_bound =>  0.0,      high_bound =>  0.0,     low_bound_open => false, high_bound_open => false));
+        append(dt, (low_bound =>  0.0,      high_bound =>  0.03162, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.03162,  high_bound =>  0.08944, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.08944,  high_bound =>  0.16432, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.16432,  high_bound =>  0.25298, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.25298,  high_bound =>  0.35355, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.35355,  high_bound =>  0.46476, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.46476,  high_bound =>  0.58566, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.58566,  high_bound =>  0.71554, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.71554,  high_bound =>  0.85381, low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  0.85381,  high_bound =>  1.0,     low_bound_open => true,  high_bound_open => false));
+        append(dt, (low_bound =>  1.0,      high_bound =>  REAL_INF,low_bound_open => true,  high_bound_open => false));
+
+        return dt;
+    end function;
+end package body;
